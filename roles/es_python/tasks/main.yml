@@ -1,0 +1,96 @@
+---
+- name: Check that a credential and the authorization are given
+  ansible.builtin.assert:
+    that:
+      - (es_python_api_key | length > 0) or (es_python_install_secret | length > 0)
+      - (es_python_api_key | length == 0) or (es_python_authorized | bool)
+    fail_msg: >-
+      Set es_python_api_key (or es_python_install_secret). With an API key, also set
+      es_python_authorized to true to confirm you own these hosts or are authorized
+      to monitor them.
+    quiet: true
+
+- name: Find which of the installer's tools are missing
+  ansible.builtin.shell: |
+    for c in curl tar gzip; do command -v "$c" >/dev/null 2>&1 || echo "$c"; done
+  register: _es_python_missing
+  changed_when: false
+  when: es_python_install_dependencies | bool
+
+- name: Install the installer's tools
+  ansible.builtin.package:
+    name: "{{ _es_python_missing.stdout_lines + ['ca-certificates'] }}"
+    state: present
+  become: true
+  when: es_python_install_dependencies | bool
+
+- name: Check whether es-python is already installed for the user
+  ansible.builtin.shell: |
+    set -o pipefail
+    home="$(getent passwd "$(id -u)" | cut -d: -f6)"
+    launcher="$home/.local/bin/es-python$EYALSEC_PYTHON_VERSION"
+    test -x "$launcher" || exit 1
+    for m in "$home"/.eyalsec/builds/*.json; do test -f "$m" && exit 0; done
+    exit 1
+  args:
+    executable: /bin/bash
+  environment:
+    EYALSEC_PYTHON_VERSION: "{{ es_python_python_version | string }}"
+  become: "{{ es_python_user | length > 0 }}"
+  become_user: "{{ es_python_user | default(omit, true) }}"
+  register: _es_python_check
+  changed_when: false
+  failed_when: _es_python_check.rc not in [0, 1]
+
+- name: Install es-python for the user
+  when: _es_python_check.rc != 0 or (es_python_force | bool)
+  become: "{{ es_python_user | length > 0 }}"
+  become_user: "{{ es_python_user | default(omit, true) }}"
+  environment:
+    EYALSEC_URL: "{{ es_python_url }}"
+    EYALSEC_MACHINE: "{{ es_python_machine }}"
+    EYALSEC_PYTHON_VERSION: "{{ es_python_python_version | string }}"
+    EYALSEC_AUTHORIZED: "{{ 'true' if (es_python_authorized | bool) else 'false' }}"
+    EYALSEC_FORCE: "{{ '1' if (es_python_force | bool) else '0' }}"
+  block:
+    - name: Create a private working directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: es-python-
+      register: _es_python_tmp
+
+    - name: Copy the install helper
+      ansible.builtin.copy:
+        src: es-python-fleet-install.sh
+        dest: "{{ _es_python_tmp.path }}/es-python-fleet-install.sh"
+        mode: "0700"
+
+    - name: Install es-python
+      ansible.builtin.command:
+        argv:
+          - sh
+          - "{{ _es_python_tmp.path }}/es-python-fleet-install.sh"
+          - "{{ '--api-key-stdin' if (es_python_api_key | length > 0) else '--install-secret-stdin' }}"
+        stdin: "{{ es_python_api_key if (es_python_api_key | length > 0) else es_python_install_secret }}"
+      register: _es_python_install
+      changed_when: _es_python_install.rc == 0
+      failed_when: false
+      # The credential travels on standard input; this keeps it, and the
+      # module arguments that carry it, out of every log.
+      no_log: true
+
+    - name: Show the installer's output
+      ansible.builtin.debug:
+        msg: "{{ _es_python_install.stdout_lines + _es_python_install.stderr_lines }}"
+
+    - name: Stop when the install did not finish
+      ansible.builtin.fail:
+        msg: "The es-python install did not finish on {{ inventory_hostname }} (exit {{ _es_python_install.rc }}). The output is above."
+      when: _es_python_install.rc != 0
+
+  always:
+    - name: Remove the working directory
+      ansible.builtin.file:
+        path: "{{ _es_python_tmp.path }}"
+        state: absent
+      when: _es_python_tmp.path is defined

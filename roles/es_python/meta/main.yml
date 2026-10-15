@@ -1,0 +1,35 @@
+---
+galaxy_info:
+  author: Eyal Gabay
+  description: Install es-python, the EyalSec Python runtime, for one user on each host.
+  company: EyalSec
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+        - trixie
+    - name: EL
+      versions:
+        - "9"
+    - name: Amazon Linux
+      versions:
+        - "2023"
+    - name: Fedora
+      versions:
+        - all
+    - name: ArchLinux
+      versions:
+        - all
+  galaxy_tags:
+    - security
+    - python
+    - appsec
+dependencies: []

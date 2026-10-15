@@ -1,0 +1,14 @@
+---
+# Install es-python for the "app" user on every host in the "python_apps" group.
+#
+#   ansible-vault encrypt_string --name es_python_api_key 'es2_...' >> group_vars/python_apps/vault.yml
+#   ansible-playbook -i inventory.ini site.yml --ask-vault-pass
+- name: Install es-python
+  hosts: python_apps
+  gather_facts: false
+  vars:
+    es_python_user: app
+    es_python_authorized: true
+    es_python_python_version: "3.12"
+  roles:
+    - role: eyalsec.es_python.es_python

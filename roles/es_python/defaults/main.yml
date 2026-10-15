@@ -1,0 +1,33 @@
+---
+# One of these two credentials is required. Keep them in Ansible Vault or your
+# secret store; the role never prints them.
+#
+# A full-access API key (Settings > API access). One key serves every host.
+es_python_api_key: ""
+# Or a one-time install secret for one machine (single use, 10 minutes).
+es_python_install_secret: ""
+
+# Required with an API key: your confirmation that you own these hosts or are
+# authorized to monitor them, the same statement as the tick box on the
+# Machines page.
+es_python_authorized: false
+
+# The user es-python is installed for. es-python installs into that user's home
+# and runs as that user. Empty means the user Ansible connects as.
+es_python_user: ""
+
+# The machine name each host reports under. Must be unique per host.
+es_python_machine: "{{ inventory_hostname }}"
+
+# 3.9, 3.10, 3.11, 3.12, 3.13 or 3.14. Empty matches the host's own python3.
+es_python_python_version: ""
+
+# Your EyalSec address.
+es_python_url: "https://eyalsec.com"
+
+# Install again even when es-python is already installed (an update).
+es_python_force: false
+
+# Install curl, CA certificates, tar and gzip with the system package manager.
+# Needs privilege escalation to root.
+es_python_install_dependencies: true

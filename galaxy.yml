@@ -1,0 +1,28 @@
+---
+namespace: eyalsec
+name: es_python
+version: 1.0.0
+readme: README.md
+authors:
+  - Eyal Gabay <eyal@eyalsec.com>
+description: >-
+  Install es-python, the EyalSec Python runtime, on many Linux hosts at once.
+  One API key for the fleet; each host becomes its own machine on your
+  EyalSec dashboard.
+license:
+  - MIT
+tags:
+  - security
+  - python
+  - appsec
+  - monitoring
+  - linux
+dependencies: {}
+repository: https://github.com/EyalSec/ansible-collection-es-python
+documentation: https://eyalsec.com/docs/install
+homepage: https://eyalsec.com
+issues: https://github.com/EyalSec/ansible-collection-es-python/issues
+build_ignore:
+  - .github
+  - examples/inventory.ini
+  - "*.tar.gz"

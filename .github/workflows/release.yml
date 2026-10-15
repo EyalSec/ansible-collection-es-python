@@ -1,0 +1,25 @@
+# Publishes the collection to Ansible Galaxy. Run it from the Actions tab, or:
+#   gh workflow run release -R EyalSec/ansible-collection-es-python --ref v1.0.0
+# Needs the repository secret GALAXY_API_KEY (galaxy.ansible.com > API token).
+name: release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  galaxy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "ansible-core>=2.17,<2.18"
+      - name: Check the ref is the tag galaxy.yml names
+        run: |
+          v="$(sed -n 's/^version: *//p' galaxy.yml)"
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "run this on the tag v$v"; exit 1; }
+      - run: ansible-galaxy collection build
+      - run: ansible-galaxy collection publish eyalsec-es_python-*.tar.gz --api-key "$GALAXY_API_KEY"
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}

@@ -1,0 +1,22 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "ansible-core>=2.17,<2.18" "ansible-lint>=24,<25"
+      - name: ansible-lint (production profile)
+        run: ansible-lint
+      - name: shellcheck the install helper
+        run: shellcheck -s sh roles/es_python/files/es-python-fleet-install.sh
+      - name: Build the collection
+        run: ansible-galaxy collection build
